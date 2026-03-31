@@ -1,0 +1,73 @@
+<div id="sidebar-wrapper" class="volt-sidebar d-flex flex-column">
+  <!-- Brand -->
+  <div class="sidebar-brand d-flex align-items-center px-3 py-3">
+    <div class="brand-icon me-2">
+      <i class="bi bi-mortarboard-fill fs-4 text-white"></i>
+    </div>
+    <div>
+      <div class="brand-name text-white fw-bold">EduManage</div>
+      <div class="brand-sub text-white-50" style="font-size:0.7rem;">School System</div>
+    </div>
+  </div>
+
+  <hr class="sidebar-divider">
+
+  <nav class="sidebar-nav flex-grow-1 px-2">
+    <!-- Dashboard (all roles) -->
+    <div class="sidebar-label">MAIN</div>
+    <a href="{{ url_for('common.dashboard') }}"
+       class="sidebar-link {% if request.endpoint == 'common.dashboard' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+    </a>
+
+    {% if current_user.role == 'admin' %}
+    <!-- Admin Links -->
+    <div class="sidebar-label mt-3">MANAGEMENT</div>
+    <a href="{{ url_for('admin.teachers_page') }}"
+       class="sidebar-link {% if request.endpoint == 'admin.teachers_page' %}active{% endif %}">
+      <i class="bi bi-person-badge"></i><span>Teachers</span>
+    </a>
+    <a href="{{ url_for('admin.students_page') }}"
+       class="sidebar-link {% if request.endpoint == 'admin.students_page' %}active{% endif %}">
+      <i class="bi bi-people"></i><span>Students</span>
+    </a>
+    <a href="{{ url_for('admin.classes_page') }}"
+       class="sidebar-link {% if request.endpoint == 'admin.classes_page' %}active{% endif %}">
+      <i class="bi bi-collection"></i><span>Classes & Subjects</span>
+    </a>
+    <a href="{{ url_for('admin.assignments_page') }}"
+       class="sidebar-link {% if request.endpoint == 'admin.assignments_page' %}active{% endif %}">
+      <i class="bi bi-diagram-3"></i><span>Assignments</span>
+    </a>
+
+    {% elif current_user.role == 'teacher' %}
+    <div class="sidebar-label mt-3">ACADEMICS</div>
+    <a href="{{ url_for('teacher.marks_page') }}"
+       class="sidebar-link {% if request.endpoint == 'teacher.marks_page' %}active{% endif %}">
+      <i class="bi bi-pencil-square"></i><span>Marks Entry</span>
+    </a>
+
+    {% elif current_user.role == 'student' %}
+    <div class="sidebar-label mt-3">MY ACADEMICS</div>
+    <a href="{{ url_for('student.profile') }}"
+       class="sidebar-link {% if request.endpoint == 'student.profile' %}active{% endif %}">
+      <i class="bi bi-person-circle"></i><span>My Profile</span>
+    </a>
+    <a href="{{ url_for('student.marks') }}"
+       class="sidebar-link {% if request.endpoint == 'student.marks' %}active{% endif %}">
+      <i class="bi bi-bar-chart-line"></i><span>My Marks</span>
+    </a>
+    {% endif %}
+
+    <div class="sidebar-label mt-3">WEBSITE</div>
+    <a href="{{ url_for('common.index') }}" class="sidebar-link">
+      <i class="bi bi-house-door"></i><span>HOME</span>
+    </a>
+  </nav>
+
+  <div class="p-3 border-top border-secondary">
+    <a href="{{ url_for('auth.logout') }}" class="sidebar-link text-danger">
+      <i class="bi bi-box-arrow-left"></i><span>Logout</span>
+    </a>
+  </div>
+</div>

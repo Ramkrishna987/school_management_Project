@@ -1,0 +1,25 @@
+from models import db
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+
+
+class User(UserMixin, db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False)  # admin / teacher / student
+
+    teacher = db.relationship('Teacher', backref='user', uselist=False, cascade='all, delete-orphan')
+    student = db.relationship('Student', backref='user', uselist=False, cascade='all, delete-orphan')
+
+    def set_password(self, plain):
+        self.password = generate_password_hash(plain)
+
+    def check_password(self, plain):
+        return check_password_hash(self.password, plain)
+
+    def __repr__(self):
+        return f'<User {self.email} [{self.role}]>'

@@ -1,0 +1,293 @@
+{% extends 'common/base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+  <h3 class="fw-bold mb-1">
+    {% if role == 'admin' %}Admin Dashboard
+    {% elif role == 'teacher' %}Teacher Dashboard
+    {% else %}Student Dashboard
+    {% endif %}
+  </h3>
+  <p class="text-muted mb-0">Welcome back, <strong>{{ current_user.name }}</strong></p>
+</div>
+
+{% if role == 'admin' %}
+<!-- Admin Stats -->
+<div class="row g-4 mb-4">
+  <div class="col-md-6 col-lg">
+    <a href="{{ url_for('admin.students_page') }}" class="text-decoration-none">
+      <div class="stat-widget p-4 rounded-4 bg-white shadow-sm border h-100 stat-card-clickable">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="stat-widget-icon bg-primary-soft text-primary rounded-3 p-3">
+            <i class="bi bi-people-fill fs-4"></i>
+          </div>
+          <span class="badge bg-primary-soft text-primary fw-semibold">Total</span>
+        </div>
+        <div class="display-6 fw-bold text-primary">{{ data.total_students }}</div>
+        <div class="text-muted small fw-semibold mt-1">Total Students</div>
+        <div class="mt-2 small text-primary opacity-75"><i class="bi bi-arrow-right-circle me-1"></i>View Details</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg">
+    <a href="{{ url_for('admin.teachers_page') }}" class="text-decoration-none">
+      <div class="stat-widget p-4 rounded-4 bg-white shadow-sm border h-100 stat-card-clickable">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="stat-widget-icon bg-success-soft text-success rounded-3 p-3">
+            <i class="bi bi-person-badge-fill fs-4"></i>
+          </div>
+          <span class="badge bg-success-soft text-success fw-semibold">Total</span>
+        </div>
+        <div class="display-6 fw-bold text-success">{{ data.total_teachers }}</div>
+        <div class="text-muted small fw-semibold mt-1">Total Teachers</div>
+        <div class="mt-2 small text-success opacity-75"><i class="bi bi-arrow-right-circle me-1"></i>View Details</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg">
+    <a href="{{ url_for('admin.classes_page') }}" class="text-decoration-none">
+      <div class="stat-widget p-4 rounded-4 bg-white shadow-sm border h-100 stat-card-clickable">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="stat-widget-icon bg-warning-soft text-warning rounded-3 p-3">
+            <i class="bi bi-collection-fill fs-4"></i>
+          </div>
+          <span class="badge bg-warning-soft text-warning fw-semibold">Total</span>
+        </div>
+        <div class="display-6 fw-bold text-warning">{{ data.total_classes }}</div>
+        <div class="text-muted small fw-semibold mt-1">Total Classes</div>
+        <div class="mt-2 small text-warning opacity-75"><i class="bi bi-arrow-right-circle me-1"></i>View Details</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg">
+    <a href="{{ url_for('admin.classes_page') }}" class="text-decoration-none">
+      <div class="stat-widget p-4 rounded-4 bg-white shadow-sm border h-100 stat-card-clickable">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="stat-widget-icon bg-info-soft text-info rounded-3 p-3">
+            <i class="bi bi-book-fill fs-4"></i>
+          </div>
+          <span class="badge bg-info-soft text-info fw-semibold">Total</span>
+        </div>
+        <div class="display-6 fw-bold text-info">{{ data.total_subjects }}</div>
+        <div class="text-muted small fw-semibold mt-1">Total Subjects</div>
+        <div class="mt-2 small text-info opacity-75"><i class="bi bi-arrow-right-circle me-1"></i>View Details</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg">
+    <a href="{{ url_for('admin.assignments_page') }}" class="text-decoration-none">
+      <div class="stat-widget p-4 rounded-4 bg-white shadow-sm border h-100 stat-card-clickable">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="stat-widget-icon bg-danger-soft text-danger rounded-3 p-3">
+            <i class="bi bi-diagram-3-fill fs-4"></i>
+          </div>
+          <span class="badge bg-danger-soft text-danger fw-semibold">Total</span>
+        </div>
+        <div class="display-6 fw-bold text-danger">{{ data.total_assignments }}</div>
+        <div class="text-muted small fw-semibold mt-1">Assignments</div>
+        <div class="mt-2 small text-danger opacity-75"><i class="bi bi-arrow-right-circle me-1"></i>View Details</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Recent Teachers -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-header bg-white border-0 pb-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>Recent Teachers</h6>
+        <a href="{{ url_for('admin.teachers_page') }}" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-body px-4">
+        {% if data.recent_teachers %}
+          {% for t in data.recent_teachers %}
+          <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+            <div class="avatar-circle-sm">{{ t.user.name[0].upper() }}</div>
+            <div class="flex-grow-1">
+              <div class="fw-semibold small">{{ t.user.name }}</div>
+              <div class="text-muted" style="font-size:0.75rem;">{{ t.qualification or 'Teacher' }}</div>
+            </div>
+            <span class="badge bg-success-soft text-success">Active</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted text-center py-3">No teachers yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Students -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-header bg-white border-0 pb-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-people me-2 text-success"></i>Recent Students</h6>
+        <a href="{{ url_for('admin.students_page') }}" class="btn btn-sm btn-outline-success">View All</a>
+      </div>
+      <div class="card-body px-4">
+        {% if data.recent_students %}
+          {% for s in data.recent_students %}
+          <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+            <div class="avatar-circle-sm bg-success">{{ s.user.name[0].upper() }}</div>
+            <div class="flex-grow-1">
+              <div class="fw-semibold small">{{ s.user.name }}</div>
+              <div class="text-muted" style="font-size:0.75rem;">
+                Roll: {{ s.roll_number or 'N/A' }} |
+                {{ s.class_.class_name ~ '-' ~ s.class_.section if s.class_ else 'No class' }}
+              </div>
+            </div>
+            <span class="badge bg-primary-soft text-primary">{{ s.gender or '-' }}</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted text-center py-3">No students yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% elif role == 'teacher' %}
+<!-- Teacher Dashboard -->
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="stat-widget p-4 rounded-4 bg-white shadow-sm border">
+      <div class="stat-widget-icon bg-primary-soft text-primary rounded-3 p-3 mb-3 d-inline-flex">
+        <i class="bi bi-diagram-3-fill fs-4"></i>
+      </div>
+      <div class="display-6 fw-bold text-primary">{{ data.total_assignments }}</div>
+      <div class="text-muted small fw-semibold">My Assignments</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-widget p-4 rounded-4 bg-white shadow-sm border">
+      <div class="stat-widget-icon bg-success-soft text-success rounded-3 p-3 mb-3 d-inline-flex">
+        <i class="bi bi-people-fill fs-4"></i>
+      </div>
+      <div class="display-6 fw-bold text-success">{{ data.total_students }}</div>
+      <div class="text-muted small fw-semibold">My Students</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-widget p-4 rounded-4 bg-white shadow-sm border">
+      <div class="stat-widget-icon bg-warning-soft text-warning rounded-3 p-3 mb-3 d-inline-flex">
+        <i class="bi bi-pencil-square fs-4"></i>
+      </div>
+      <div class="display-6 fw-bold text-warning">{{ data.total_marks_entered }}</div>
+      <div class="text-muted small fw-semibold">Marks Entered</div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+  <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+    <h6 class="fw-bold mb-0"><i class="bi bi-diagram-3 me-2 text-primary"></i>My Assigned Classes &amp; Subjects</h6>
+    <a href="{{ url_for('teacher.marks_page') }}" class="btn btn-sm btn-primary">Enter Marks</a>
+  </div>
+  <div class="card-body px-4">
+    {% if data.assignments %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr><th>#</th><th>Class</th><th>Subject</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          {% for a in data.assignments %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><span class="badge bg-primary-soft text-primary fw-semibold">{{ a.class_.class_name }}-{{ a.class_.section }}</span></td>
+            <td>{{ a.subject.subject_name }}</td>
+            <td><a href="{{ url_for('teacher.marks_page') }}" class="btn btn-sm btn-outline-primary">Enter Marks</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-center py-4">No assignments yet. Contact Admin.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% elif role == 'student' %}
+<!-- Student Dashboard -->
+{% set student = data.student %}
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="stat-widget p-4 rounded-4 bg-white shadow-sm border text-center">
+      <div class="avatar-circle-lg mx-auto mb-3">{{ current_user.name[0].upper() }}</div>
+      <div class="fw-bold">{{ current_user.name }}</div>
+      <div class="text-muted small">Roll No: {{ student.roll_number if student else 'N/A' }}</div>
+      <div class="text-muted small">
+        {% if student and student.class_ %}
+          {{ student.class_.class_name }}-{{ student.class_.section }}
+        {% else %}No class assigned{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-widget p-4 rounded-4 bg-white shadow-sm border text-center">
+      <div class="display-4 fw-bold {% if data.percentage >= 75 %}text-success{% elif data.percentage >= 50 %}text-warning{% else %}text-danger{% endif %}">
+        {{ data.percentage }}%
+      </div>
+      <div class="text-muted small fw-semibold">Overall Percentage</div>
+      <div class="progress mt-3" style="height:8px;">
+        <div class="progress-bar {% if data.percentage >= 75 %}bg-success{% elif data.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+             style="width:{{ data.percentage }}%"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-widget p-4 rounded-4 bg-white shadow-sm border text-center">
+      <div class="display-4 fw-bold text-primary">{{ data.marks | length }}</div>
+      <div class="text-muted small fw-semibold">Subjects Appeared</div>
+      <a href="{{ url_for('student.marks') }}" class="btn btn-outline-primary btn-sm mt-3">View Marks</a>
+    </div>
+  </div>
+</div>
+
+{% if data.marks %}
+<div class="card border-0 shadow-sm rounded-4">
+  <div class="card-header bg-white border-0 pt-4 px-4">
+    <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart me-2 text-primary"></i>My Marks Summary</h6>
+  </div>
+  <div class="card-body px-4">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr><th>Subject</th><th>Marks</th><th>Max</th><th>%</th><th>Grade</th></tr>
+        </thead>
+        <tbody>
+          {% for m in data.marks %}
+          <tr>
+            <td>{{ m.subject.subject_name }}</td>
+            <td>{{ m.marks }}</td>
+            <td>{{ m.max_marks }}</td>
+            <td>{{ m.percentage() }}%</td>
+            <td>
+              <span class="badge {% if m.grade() in ['A+','A'] %}bg-success{% elif m.grade() in ['B+','B'] %}bg-primary{% elif m.grade() == 'C' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                {{ m.grade() }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-info rounded-4">
+  <i class="bi bi-info-circle me-2"></i>No marks have been entered yet. Please check back later.
+</div>
+{% endif %}
+
+{% else %}
+<div class="alert alert-warning rounded-4">
+  <i class="bi bi-exclamation-triangle me-2"></i>Unknown role. Please contact your administrator.
+</div>
+{% endif %}
+
+{% endblock %}

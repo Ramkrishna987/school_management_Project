@@ -1,0 +1,439 @@
+{% extends 'common/base.html' %}
+{% block title %}Teachers{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h3 class="fw-bold mb-1">Teachers Management</h3>
+    <p class="text-muted mb-0">Add, edit, view and delete teachers</p>
+  </div>
+  <button class="btn btn-primary fw-semibold" onclick="openAddModal()">
+    <i class="bi bi-plus-circle me-2"></i>Add Teacher
+  </button>
+</div>
+
+<!-- Search & Per Page -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+  <div class="card-body p-3">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-6">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" class="form-control border-start-0" id="searchInput" placeholder="Search teachers..." oninput="debounce(loadTeachers, 400)()">
+        </div>
+      </div>
+      <div class="col-auto ms-auto">
+        <select class="form-select" id="perPageSelect" onchange="loadTeachers()">
+          <option value="5">5 per page</option>
+          <option value="10" selected>10 per page</option>
+          <option value="25">25 per page</option>
+          <option value="50">50 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card border-0 shadow-sm rounded-4">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light rounded-top">
+          <tr>
+            <th class="ps-4">#</th>
+            <th>Teacher</th>
+            <th>Contact</th>
+            <th>Qualification</th>
+            <th>Experience</th>
+            <th class="text-center pe-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="teacherBody">
+          <tr><td colspan="6" class="text-center py-5 text-muted">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer bg-white border-0 px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="text-muted small" id="tableInfo"></div>
+      <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal fade" id="teacherModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold" id="modalTitle">Add Teacher</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 pb-4">
+        <div id="modalAlert"></div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Full Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="tName" placeholder="Dr. John Doe">
+            <div class="invalid-feedback">Full name is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Email Address <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" id="tEmail" placeholder="teacher@school.com">
+            <div class="invalid-feedback">A valid email is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Phone Number</label>
+            <input type="text" class="form-control" id="tPhone" placeholder="+91 9876543210">
+            <div class="invalid-feedback">Enter a valid phone number.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Qualification</label>
+            <input type="text" class="form-control" id="tQual" placeholder="M.Sc Mathematics">
+            <div class="invalid-feedback">Qualification cannot exceed 100 characters.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Experience</label>
+            <input type="text" class="form-control" id="tExp" placeholder="5 years">
+            <div class="invalid-feedback">Experience field cannot exceed 50 characters.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Photo</label>
+            <input type="file" class="form-control" id="tPhoto" accept="image/*" onchange="previewImg(this,'tPhotoPreview')">
+            <div class="invalid-feedback">Only JPG/PNG/GIF/WebP under 2 MB allowed.</div>
+          </div>
+          <div class="col-12">
+            <img id="tPhotoPreview" src="" class="rounded-3 d-none" style="height:80px;object-fit:cover;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary fw-semibold" id="saveBtn" onclick="saveTeacher()">
+          <i class="bi bi-check-circle me-2"></i>Save Teacher
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Teacher Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4" id="viewBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4">
+        <p>Are you sure you want to delete <strong id="deleteName"></strong>? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger fw-semibold" id="confirmDelete">
+          <i class="bi bi-trash me-2"></i>Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+let editId = null;
+
+async function loadTeachers(page = currentPage) {
+  currentPage = page;
+  const search = document.getElementById('searchInput').value;
+  const perPage = document.getElementById('perPageSelect').value;
+  const res = await fetch(`/admin/api/teachers?page=${page}&per_page=${perPage}&search=${encodeURIComponent(search)}`);
+  const data = await res.json();
+  renderTeachers(data);
+}
+
+function renderTeachers(data) {
+  const body = document.getElementById('teacherBody');
+  if (!data.teachers.length) {
+    body.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted"><i class="bi bi-people fs-1 d-block mb-2"></i>No teachers found</td></tr>';
+    document.getElementById('tableInfo').textContent = '';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+  const start = (currentPage - 1) * parseInt(document.getElementById('perPageSelect').value) + 1;
+  body.innerHTML = data.teachers.map((t, i) => `
+    <tr>
+      <td class="ps-4 text-muted">${start + i}</td>
+      <td>
+        <div class="d-flex align-items-center gap-2">
+          ${t.photo ? `<img src="/static/uploads/${t.photo}" class="rounded-circle" width="38" height="38" style="object-fit:cover;">` :
+            `<div class="avatar-circle-sm">${t.name[0].toUpperCase()}</div>`}
+          <div>
+            <div class="fw-semibold">${t.name}</div>
+            <div class="text-muted small">${t.email}</div>
+          </div>
+        </div>
+      </td>
+      <td class="text-muted small">${t.phone || '—'}</td>
+      <td class="text-muted small">${t.qualification || '—'}</td>
+      <td class="text-muted small">${t.experience || '—'}</td>
+      <td class="text-center pe-4">
+        <button class="btn btn-sm btn-outline-info me-1" onclick="viewTeacher(${t.id})" title="View"><i class="bi bi-eye"></i></button>
+        <button class="btn btn-sm btn-outline-primary me-1" onclick="editTeacher(${t.id})" title="Edit"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteTeacher(${t.id},'${t.name}')" title="Delete"><i class="bi bi-trash"></i></button>
+      </td>
+    </tr>
+  `).join('');
+  document.getElementById('tableInfo').textContent = `Showing ${start}–${start + data.teachers.length - 1} of ${data.total}`;
+  renderPagination(data.pages, currentPage, loadTeachers);
+}
+
+
+
+// function validateTeacherForm() {
+//   const name = document.getElementById('tName').value.trim();
+//   const email = document.getElementById('tEmail').value.trim();
+//   const phone = document.getElementById('tPhone').value.trim();
+//   const photo = document.getElementById('tPhoto').files[0];
+
+//   let errors = [];
+
+//   // Name validation
+//   if (!name) {
+//     errors.push("Full Name is required");
+//   }
+
+//   // Email validation
+//   const emailPattern = /^[^ ]+@[^ ]+\.[a-z]{2,}$/i;
+//   if (!email) {
+//     errors.push("Email is required");
+//   } else if (!emailPattern.test(email)) {
+//     errors.push("Enter a valid email address");
+//   }
+
+//   // Phone validation (optional but must be valid if entered)
+//   const phonePattern = /^[6-9]\d{9}$/;
+//   if (phone && !phonePattern.test(phone)) {
+//     errors.push("Enter a valid 10-digit phone number");
+//   }
+
+//   // Photo validation
+//   if (photo) {
+//     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+//     if (!allowedTypes.includes(photo.type)) {
+//       errors.push("Photo must be JPG or PNG format");
+//     }
+
+//     if (photo.size > 2 * 1024 * 1024) {
+//       errors.push("Photo size must be less than 2MB");
+//     }
+//   }
+
+//   return errors;
+// }
+
+
+
+
+
+
+function openAddModal() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = 'Add Teacher';
+  document.getElementById('saveBtn').textContent = 'Save Teacher';
+  ['tName','tEmail','tPhone','tQual','tExp'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tPhoto').value = '';
+  document.getElementById('tPhotoPreview').classList.add('d-none');
+  document.getElementById('modalAlert').innerHTML = '';
+  new bootstrap.Modal(document.getElementById('teacherModal')).show();
+}
+
+async function editTeacher(id) {
+  const res = await fetch(`/admin/api/teachers/${id}`);
+  const t = await res.json();
+  editId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Teacher';
+  document.getElementById('saveBtn').innerHTML = '<i class="bi bi-check-circle me-2"></i>Update Teacher';
+  document.getElementById('tName').value = t.name;
+  document.getElementById('tEmail').value = t.email;
+  document.getElementById('tPhone').value = t.phone;
+  document.getElementById('tQual').value = t.qualification;
+  document.getElementById('tExp').value = t.experience;
+  const prev = document.getElementById('tPhotoPreview');
+  if (t.photo) { prev.src = `/static/uploads/${t.photo}`; prev.classList.remove('d-none'); }
+  else prev.classList.add('d-none');
+  document.getElementById('modalAlert').innerHTML = '';
+  new bootstrap.Modal(document.getElementById('teacherModal')).show();
+}
+
+/* ── Teacher Form Validation ──────────────────────────────────────────── */
+const tEmailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const tPhoneRe = /^[+]?[\d\s\-()]{7,15}$/;
+const T_ALLOWED_IMG = ['image/jpeg','image/png','image/gif','image/webp'];
+
+function tSetState(id, valid, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('is-invalid', !valid);
+  el.classList.toggle('is-valid',   valid);
+  const fb = el.closest('.col-md-6, .col-12')?.querySelector('.invalid-feedback');
+  if (fb) fb.textContent = msg || '';
+}
+
+function validateTeacherForm() {
+  const alertEl = document.getElementById('modalAlert');
+  const errors = [];
+
+  // Name — required
+  const name = document.getElementById('tName').value.trim();
+  if (!name) { tSetState('tName', false, 'Full name is required.'); errors.push('name'); }
+  else if (name.length < 2) { tSetState('tName', false, 'Name must be at least 2 characters.'); errors.push('name'); }
+  else if (!/^[a-zA-Z\s.'-]+$/.test(name)) { tSetState('tName', false, 'Name contains invalid characters.'); errors.push('name'); }
+  else tSetState('tName', true);
+
+  // Email — required
+  const email = document.getElementById('tEmail').value.trim();
+  if (!email) { tSetState('tEmail', false, 'Email address is required.'); errors.push('email'); }
+  else if (!tEmailRe.test(email)) { tSetState('tEmail', false, 'Enter a valid email address.'); errors.push('email'); }
+  else tSetState('tEmail', true);
+
+  // Phone — optional but validate format if provided
+  const phone = document.getElementById('tPhone').value.trim();
+  if (phone && !tPhoneRe.test(phone)) {
+    tSetState('tPhone', false, 'Enter a valid phone number (7–15 digits).');
+    errors.push('phone');
+  } else tSetState('tPhone', true);
+
+  // Qualification — optional, max 100 chars
+  const qual = document.getElementById('tQual').value.trim();
+  if (qual && qual.length > 100) { tSetState('tQual', false, 'Qualification cannot exceed 100 characters.'); errors.push('qual'); }
+  else tSetState('tQual', true);
+
+  // Experience — optional, must look like a valid duration if given
+  const exp = document.getElementById('tExp').value.trim();
+  if (exp && exp.length > 50) { tSetState('tExp', false, 'Experience field cannot exceed 50 characters.'); errors.push('exp'); }
+  else tSetState('tExp', true);
+
+  // Photo — optional but validate type/size
+  const photoFile = document.getElementById('tPhoto').files[0];
+  if (photoFile) {
+    if (!T_ALLOWED_IMG.includes(photoFile.type)) {
+      tSetState('tPhoto', false, 'Only JPG, PNG, GIF or WebP images are allowed.');
+      errors.push('photo');
+    } else if (photoFile.size > 2 * 1024 * 1024) {
+      tSetState('tPhoto', false, 'Photo must be under 2 MB.');
+      errors.push('photo');
+    } else tSetState('tPhoto', true);
+  }
+
+  if (errors.length) {
+    alertEl.innerHTML = '<div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1"></i>Please fix the highlighted fields before saving.</div>';
+    return false;
+  }
+  alertEl.innerHTML = '';
+  return true;
+}
+
+async function saveTeacher() {
+  if (!validateTeacherForm()) return;
+
+  const fd = new FormData();
+  fd.append('name', document.getElementById('tName').value.trim());
+  fd.append('email', document.getElementById('tEmail').value.trim());
+  fd.append('phone', document.getElementById('tPhone').value.trim());
+  fd.append('qualification', document.getElementById('tQual').value.trim());
+  fd.append('experience', document.getElementById('tExp').value.trim());
+  const photo = document.getElementById('tPhoto').files[0];
+  if (photo) fd.append('photo', photo);
+
+  const saveBtn = document.getElementById('saveBtn');
+  const origHtml = saveBtn.innerHTML;
+  saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+  saveBtn.disabled = true;
+
+  const url = editId ? `/admin/api/teachers/${editId}` : '/admin/api/teachers';
+  const method = editId ? 'PUT' : 'POST';
+  const res = await fetch(url, { method, body: fd });
+  const data = await res.json();
+
+  saveBtn.innerHTML = origHtml;
+  saveBtn.disabled = false;
+
+  if (!res.ok) {
+    document.getElementById('modalAlert').innerHTML = `<div class="alert alert-danger small"><i class="bi bi-x-circle me-1"></i>${data.error}</div>`;
+    return;
+  }
+  bootstrap.Modal.getInstance(document.getElementById('teacherModal')).hide();
+  showToast(data.message, 'success');
+  if (!editId && data.plain_password) {
+    showToast(`🔑 Password: ${data.plain_password}`, 'info', 8000);
+  }
+  loadTeachers();
+}
+
+// Live validation — clear on input
+document.addEventListener('DOMContentLoaded', () => {
+  ['tName','tEmail','tPhone','tQual','tExp','tPhoto'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      const evt = (id === 'tPhoto') ? 'change' : 'input';
+      el.addEventListener(evt, () => { el.classList.remove('is-invalid', 'is-valid'); });
+    }
+  });
+});
+
+async function viewTeacher(id) {
+  const res = await fetch(`/admin/api/teachers/${id}`);
+  const t = await res.json();
+  document.getElementById('viewBody').innerHTML = `
+    <div class="text-center mb-4">
+      ${t.photo ? `<img src="/static/uploads/${t.photo}" class="rounded-circle mb-2" width="90" height="90" style="object-fit:cover;">` :
+        `<div class="avatar-circle-lg mx-auto mb-2">${t.name[0].toUpperCase()}</div>`}
+      <h5 class="fw-bold mb-0">${t.name}</h5>
+      <div class="text-muted small">${t.email}</div>
+    </div>
+    <div class="row g-3">
+      ${[['Phone', t.phone||'—'],['Qualification', t.qualification||'—'],['Experience', t.experience||'—']].map(([l,v])=>`
+        <div class="col-6">
+          <div class="p-3 bg-light rounded-3">
+            <div class="text-muted small">${l}</div>
+            <div class="fw-semibold small">${v}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  new bootstrap.Modal(document.getElementById('viewModal')).show();
+}
+
+function confirmDeleteTeacher(id, name) {
+  document.getElementById('deleteName').textContent = name;
+  document.getElementById('confirmDelete').onclick = () => deleteTeacher(id);
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+async function deleteTeacher(id) {
+  const res = await fetch(`/admin/api/teachers/${id}`, { method: 'DELETE' });
+  const data = await res.json();
+  bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+  showToast(data.message, 'success');
+  loadTeachers();
+}
+
+loadTeachers();
+</script>
+{% endblock %}

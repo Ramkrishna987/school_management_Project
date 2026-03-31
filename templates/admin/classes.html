@@ -1,0 +1,279 @@
+{% extends 'common/base.html' %}
+{% block title %}Classes & Subjects{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h3 class="fw-bold mb-1">Classes & Subjects</h3>
+  <p class="text-muted mb-0">Manage school classes and subjects</p>
+</div>
+
+<div class="row g-4">
+  <!-- Classes Card -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm rounded-4 h-100">
+      <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-collection me-2 text-primary"></i>Classes</h6>
+        <button class="btn btn-primary btn-sm fw-semibold" onclick="openAddClass()">
+          <i class="bi bi-plus me-1"></i>Add Class
+        </button>
+      </div>
+      <div class="card-body px-4">
+        <div id="classesList"><div class="text-center py-4 text-muted">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subjects Card -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm rounded-4 h-100">
+      <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-book me-2 text-success"></i>Subjects</h6>
+        <button class="btn btn-success btn-sm fw-semibold" onclick="openAddSubject()">
+          <i class="bi bi-plus me-1"></i>Add Subject
+        </button>
+      </div>
+      <div class="card-body px-4">
+        <div id="subjectsList"><div class="text-center py-4 text-muted">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Class Modal -->
+<div class="modal fade" id="classModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Add New Class</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4">
+        <div id="classAlert"></div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Class Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="className" placeholder="e.g. Class 10">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Section</label>
+          <input type="text" class="form-control" id="classSection" placeholder="e.g. A">
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary fw-semibold" onclick="saveClass()">
+          <i class="bi bi-check-circle me-2"></i>Add Class
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Subject Modal -->
+<div class="modal fade" id="subjectModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Add New Subject</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4">
+        <div id="subjectAlert"></div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Subject Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="subjectName" placeholder="e.g. Mathematics">
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-success fw-semibold" onclick="saveSubject()">
+          <i class="bi bi-check-circle me-2"></i>Add Subject
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4">
+        <p>Delete <strong id="deleteItemName"></strong>? This cannot be undone.</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger fw-semibold" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadClasses() {
+  try {
+    const res = await fetch('/admin/api/classes');
+    if (!res.ok) throw new Error('Failed to load classes');
+    const data = await res.json();
+    const el = document.getElementById('classesList');
+    if (!data.classes.length) {
+      el.innerHTML = '<div class="text-center text-muted py-4"><i class="bi bi-collection fs-2 d-block mb-2"></i>No classes yet</div>';
+      return;
+    }
+    el.innerHTML = `<div class="table-responsive"><table class="table table-hover align-middle mb-0">
+      <thead class="table-light"><tr><th>Class</th><th>Section</th><th>Students</th></tr></thead>
+      <tbody>${data.classes.map(c => `
+        <tr>
+          <td><span class="badge bg-primary-soft text-primary fw-semibold">${c.class_name}</span></td>
+          <td>${c.section || '—'}</td>
+          <td><span class="badge bg-light text-muted">${c.student_count} students</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+  } catch (err) {
+    document.getElementById('classesList').innerHTML =
+      '<div class="alert alert-danger small">Failed to load classes. Please refresh.</div>';
+  }
+}
+
+async function loadSubjects() {
+  try {
+    const res = await fetch('/admin/api/subjects');
+    if (!res.ok) throw new Error('Failed to load subjects');
+    const data = await res.json();
+    const el = document.getElementById('subjectsList');
+    if (!data.subjects.length) {
+      el.innerHTML = '<div class="text-center text-muted py-4"><i class="bi bi-book fs-2 d-block mb-2"></i>No subjects yet</div>';
+      return;
+    }
+    el.innerHTML = `<div class="d-flex flex-wrap gap-2">${data.subjects.map(s => `
+      <span class="badge bg-success-soft text-success fw-semibold px-3 py-2 d-flex align-items-center gap-2" style="font-size:0.85rem;">
+        ${s.subject_name}
+        <button type="button" class="btn-close btn-close-sm ms-1" style="filter:invert(1) sepia(1) saturate(5) hue-rotate(100deg);font-size:0.6rem;" onclick="confirmDelete('subject',${s.id},'${s.subject_name}')"></button>
+      </span>`).join('')}</div>`;
+  } catch (err) {
+    document.getElementById('subjectsList').innerHTML =
+      '<div class="alert alert-danger small">Failed to load subjects. Please refresh.</div>';
+  }
+}
+
+function openAddClass() {
+  document.getElementById('className').value = '';
+  document.getElementById('classSection').value = '';
+  document.getElementById('classAlert').innerHTML = '';
+  ['className','classSection'].forEach(id => document.getElementById(id).classList.remove('is-invalid'));
+  new bootstrap.Modal(document.getElementById('classModal')).show();
+}
+
+function openAddSubject() {
+  document.getElementById('subjectName').value = '';
+  document.getElementById('subjectAlert').innerHTML = '';
+  document.getElementById('subjectName').classList.remove('is-invalid');
+  new bootstrap.Modal(document.getElementById('subjectModal')).show();
+}
+
+async function saveClass() {
+  const classNameEl = document.getElementById('className');
+  const classSectionEl = document.getElementById('classSection');
+  const alertEl = document.getElementById('classAlert');
+  const className = classNameEl.value.trim();
+  const classSection = classSectionEl.value.trim();
+
+  // Client-side validation
+  if (!className) {
+    classNameEl.classList.add('is-invalid');
+    alertEl.innerHTML = '<div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1"></i>Class name is required.</div>';
+    return;
+  }
+  classNameEl.classList.remove('is-invalid');
+  alertEl.innerHTML = '';
+
+  try {
+    const res = await fetch('/admin/api/classes', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ class_name: className, section: classSection })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alertEl.innerHTML = `<div class="alert alert-danger small py-2"><i class="bi bi-x-circle me-1"></i>${data.error}</div>`;
+      return;
+    }
+    bootstrap.Modal.getInstance(document.getElementById('classModal')).hide();
+    showToast(data.message || 'Class created successfully', 'success');
+    loadClasses();
+  } catch (err) {
+    alertEl.innerHTML = '<div class="alert alert-danger small py-2"><i class="bi bi-x-circle me-1"></i>Network error. Please try again.</div>';
+  }
+}
+
+async function saveSubject() {
+  const subjectNameEl = document.getElementById('subjectName');
+  const alertEl = document.getElementById('subjectAlert');
+  const subjectName = subjectNameEl.value.trim();
+
+  // Client-side validation
+  if (!subjectName) {
+    subjectNameEl.classList.add('is-invalid');
+    alertEl.innerHTML = '<div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1"></i>Subject name is required.</div>';
+    return;
+  }
+  subjectNameEl.classList.remove('is-invalid');
+  alertEl.innerHTML = '';
+
+  try {
+    const res = await fetch('/admin/api/subjects', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ subject_name: subjectName })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alertEl.innerHTML = `<div class="alert alert-danger small py-2"><i class="bi bi-x-circle me-1"></i>${data.error}</div>`;
+      return;
+    }
+    bootstrap.Modal.getInstance(document.getElementById('subjectModal')).hide();
+    showToast(data.message || 'Subject created successfully', 'success');
+    loadSubjects();
+  } catch (err) {
+    alertEl.innerHTML = '<div class="alert alert-danger small py-2"><i class="bi bi-x-circle me-1"></i>Network error. Please try again.</div>';
+  }
+}
+
+function confirmDelete(type, id, name) {
+  document.getElementById('deleteItemName').textContent = name;
+  document.getElementById('confirmDeleteBtn').onclick = () => deleteItem(type, id);
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+async function deleteItem(type, id) {
+  try {
+    const url = type === 'class' ? `/admin/api/classes/${id}` : `/admin/api/subjects/${id}`;
+    const res = await fetch(url, { method: 'DELETE' });
+    const data = await res.json();
+    bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+    showToast(data.message || 'Deleted successfully', res.ok ? 'success' : 'danger');
+    if (type === 'class') loadClasses(); else loadSubjects();
+  } catch (err) {
+    bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+    showToast('Delete failed. Please try again.', 'danger');
+  }
+}
+
+// Clear invalid states on input
+document.addEventListener('DOMContentLoaded', () => {
+  ['className','classSection','subjectName'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => el.classList.remove('is-invalid'));
+  });
+});
+
+loadClasses();
+loadSubjects();
+</script>
+{% endblock %}

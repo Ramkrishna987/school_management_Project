@@ -1,0 +1,549 @@
+{% extends 'common/base.html' %}
+{% block title %}Students{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h3 class="fw-bold mb-1">Students Management</h3>
+    <p class="text-muted mb-0">Add, edit, view and delete students</p>
+  </div>
+  <button class="btn btn-success fw-semibold" onclick="openAddModal()">
+    <i class="bi bi-plus-circle me-2"></i>Add Student
+  </button>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+  <div class="card-body p-3">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-6">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" class="form-control border-start-0" id="searchInput" placeholder="Search students..." oninput="debounce(loadStudents,400)()">
+        </div>
+      </div>
+      <div class="col-auto ms-auto">
+        <select class="form-select" id="perPageSelect" onchange="loadStudents()">
+          <option value="5">5 per page</option>
+          <option value="10" selected>10 per page</option>
+          <option value="25">25 per page</option>
+          <option value="50">50 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">#</th><th>Student</th><th>Class</th>
+            <th>Roll No</th><th>Gender</th><th>Phone</th>
+            <th class="text-center pe-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="studentBody">
+          <tr><td colspan="7" class="text-center py-5 text-muted">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer bg-white border-0 px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="text-muted small" id="tableInfo"></div>
+      <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal fade" id="studentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold" id="modalTitle">Add Student</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 pb-4">
+        <div id="modalAlert"></div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Full Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="sName" placeholder="Student Name">
+            <div class="invalid-feedback">Full name is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Email <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" id="sEmail" placeholder="student@email.com">
+            <div class="invalid-feedback">A valid email is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Class</label>
+            <div class="input-group">
+              <select class="form-select" id="sClassId">
+                <option value="">— Select Class —</option>
+                {% for c in classes %}
+                <option value="{{ c.id }}">{{ c.class_name }}-{{ c.section }}</option>
+                {% endfor %}
+              </select>
+
+               <!-- Add Class Button -->
+  <button class="btn btn-outline-primary" type="button"
+          onclick="openAddClassModal()">
+    <i class="bi bi-plus-lg"></i>
+  </button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Roll Number</label>
+            <input type="text" class="form-control" id="sRoll" placeholder="10A001">
+            <div class="invalid-feedback">Roll number cannot exceed 20 characters.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Gender</label>
+            <select class="form-select" id="sGender">
+              <option value="">— Select —</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Date of Birth</label>
+            <input type="date" class="form-control" id="sDob">
+            <div class="invalid-feedback">Enter a valid date of birth.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Phone</label>
+            <input type="text" class="form-control" id="sPhone" placeholder="9876543210">
+            <div class="invalid-feedback">Enter a valid 10-digit mobile number.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Guardian Name</label>
+            <input type="text" class="form-control" id="sGuardian" placeholder="Parent/Guardian Name">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold small">Address</label>
+            <textarea class="form-control" id="sAddress" rows="2" placeholder="Full address"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Photo</label>
+            <input type="file" class="form-control" id="sPhoto" accept="image/*" onchange="previewImg(this,'sPhotoPreview')">
+            <div class="invalid-feedback">Only JPG/PNG/GIF/WebP under 2 MB allowed.</div>
+          </div>
+          <div class="col-12">
+            <img id="sPhotoPreview" src="" class="rounded-3 d-none" style="height:80px;object-fit:cover;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-success fw-semibold" id="saveBtn" onclick="saveStudent()">
+          <i class="bi bi-check-circle me-2"></i>Save Student
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Student Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4" id="viewBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4">
+        <p>Are you sure you want to delete <strong id="deleteName"></strong>?</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger fw-semibold" id="confirmDelete">
+          <i class="bi bi-trash me-2"></i>Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Class Modal -->
+<div class="modal fade" id="classModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Add New Class</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="mb-3">
+          <label class="form-label">Class Name</label>
+          <input type="text" id="className" class="form-control"
+                 placeholder="Example: 10">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Section</label>
+          <input type="text" id="classSection" class="form-control"
+                 placeholder="Example: A">
+        </div>
+
+        <div id="classAlert"></div>
+
+      </div>
+
+      <div class="modal-footer border-0">
+        <button class="btn btn-light"
+                data-bs-dismiss="modal">Cancel</button>
+
+        <button class="btn btn-primary"
+                onclick="saveClass()">
+          Save Class
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+function openAddClassModal() {
+
+  document.getElementById('className').value = '';
+  document.getElementById('classSection').value = '';
+  document.getElementById('classAlert').innerHTML = '';
+
+  new bootstrap.Modal(
+    document.getElementById('classModal')
+  ).show();
+}
+
+
+async function saveClass() {
+
+  const class_name =
+    document.getElementById('className').value.trim();
+
+  const section =
+    document.getElementById('classSection').value.trim();
+
+
+  const res = await fetch('/admin/api/classes', {
+
+    method: 'POST',
+
+    headers: {
+      'Content-Type': 'application/json'
+    },
+
+    body: JSON.stringify({
+      class_name,
+      section
+    })
+
+  });
+
+
+  const data = await res.json();
+
+
+  if (!res.ok) {
+
+    document.getElementById('classAlert').innerHTML =
+      `<div class="alert alert-danger small">${data.error}</div>`;
+
+    return;
+  }
+
+
+  bootstrap.Modal.getInstance(
+    document.getElementById('classModal')
+  ).hide();
+
+
+  showToast('Class added successfully', 'success');
+
+
+  // reload dropdown automatically
+  const dropdown =
+    document.getElementById('sClassId');
+
+
+  dropdown.innerHTML +=
+    `<option value="${data.id}" selected>
+       ${data.class_name}-${data.section}
+     </option>`;
+
+}
+
+
+let currentPage = 1, editId = null;
+
+async function loadStudents(page = currentPage) {
+  currentPage = page;
+  const search = document.getElementById('searchInput').value;
+  const perPage = document.getElementById('perPageSelect').value;
+  const res = await fetch(`/admin/api/students?page=${page}&per_page=${perPage}&search=${encodeURIComponent(search)}`);
+  const data = await res.json();
+  renderStudents(data);
+}
+
+function renderStudents(data) {
+  const body = document.getElementById('studentBody');
+  if (!data.students.length) {
+    body.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted"><i class="bi bi-people fs-1 d-block mb-2"></i>No students found</td></tr>';
+    document.getElementById('tableInfo').textContent = '';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+  const perPage = parseInt(document.getElementById('perPageSelect').value);
+  const start = (currentPage - 1) * perPage + 1;
+  body.innerHTML = data.students.map((s, i) => `
+    <tr>
+      <td class="ps-4 text-muted">${start + i}</td>
+      <td>
+        <div class="d-flex align-items-center gap-2">
+          ${s.photo ? `<img src="/static/uploads/${s.photo}" class="rounded-circle" width="38" height="38" style="object-fit:cover;">` :
+            `<div class="avatar-circle-sm bg-success">${s.name[0].toUpperCase()}</div>`}
+          <div>
+            <div class="fw-semibold">${s.name}</div>
+            <div class="text-muted small">${s.email}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge bg-primary-soft text-primary">${s.class_name || '—'}</span></td>
+      <td class="text-muted small">${s.roll_number || '—'}</td>
+      <td class="text-muted small">${s.gender || '—'}</td>
+      <td class="text-muted small">${s.phone || '—'}</td>
+      <td class="text-center pe-4">
+        <button class="btn btn-sm btn-outline-info me-1" onclick="viewStudent(${s.id})" title="View"><i class="bi bi-eye"></i></button>
+        <button class="btn btn-sm btn-outline-primary me-1" onclick="editStudent(${s.id})" title="Edit"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteStudent(${s.id},'${s.name}')" title="Delete"><i class="bi bi-trash"></i></button>
+      </td>
+    </tr>
+  `).join('');
+  document.getElementById('tableInfo').textContent = `Showing ${start}–${start + data.students.length - 1} of ${data.total}`;
+  renderPagination(data.pages, currentPage, loadStudents);
+}
+
+function openAddModal() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = 'Add Student';
+  document.getElementById('saveBtn').innerHTML = '<i class="bi bi-check-circle me-2"></i>Save Student';
+  ['sName','sEmail','sRoll','sPhone','sGuardian','sAddress'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('sClassId').value = '';
+  document.getElementById('sGender').value = '';
+  document.getElementById('sDob').value = '';
+  document.getElementById('sPhoto').value = '';
+  document.getElementById('sPhotoPreview').classList.add('d-none');
+  document.getElementById('modalAlert').innerHTML = '';
+  new bootstrap.Modal(document.getElementById('studentModal')).show();
+}
+
+async function editStudent(id) {
+  const res = await fetch(`/admin/api/students/${id}`);
+  const s = await res.json();
+  editId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Student';
+  document.getElementById('saveBtn').innerHTML = '<i class="bi bi-check-circle me-2"></i>Update Student';
+  document.getElementById('sName').value = s.name;
+  document.getElementById('sEmail').value = s.email;
+  document.getElementById('sClassId').value = s.class_id || '';
+  document.getElementById('sRoll').value = s.roll_number;
+  document.getElementById('sGender').value = s.gender;
+  document.getElementById('sDob').value = s.dob;
+  document.getElementById('sPhone').value = s.phone;
+  document.getElementById('sGuardian').value = s.guardian;
+  document.getElementById('sAddress').value = s.address;
+  const prev = document.getElementById('sPhotoPreview');
+  if (s.photo) { prev.src = `/static/uploads/${s.photo}`; prev.classList.remove('d-none'); }
+  else prev.classList.add('d-none');
+  document.getElementById('modalAlert').innerHTML = '';
+  new bootstrap.Modal(document.getElementById('studentModal')).show();
+}
+
+/* ── Student Form Validation ──────────────────────────────────────────── */
+const sEmailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const sPhoneRe = /^[6-9]\d{9}$/;
+const ALLOWED_IMG = ['image/jpeg','image/png','image/gif','image/webp'];
+const MAX_IMG_MB  = 2;
+
+function sField(id) { return document.getElementById(id); }
+
+function sSetState(id, valid, msg) {
+  const el = sField(id);
+  if (!el) return;
+  el.classList.toggle('is-invalid', !valid);
+  el.classList.toggle('is-valid',   valid);
+  const fb = el.parentElement.querySelector('.invalid-feedback') ||
+             el.closest('.col-md-6, .col-12')?.querySelector('.invalid-feedback');
+  if (fb) fb.textContent = msg || '';
+}
+
+function validateStudentForm() {
+  const alertEl = document.getElementById('modalAlert');
+  const errors = [];
+
+  // Name
+  const name = sField('sName').value.trim();
+  if (!name) { sSetState('sName', false, 'Full name is required.'); errors.push('name'); }
+  else if (name.length < 2) { sSetState('sName', false, 'Name must be at least 2 characters.'); errors.push('name'); }
+  else if (!/^[a-zA-Z\s.'-]+$/.test(name)) { sSetState('sName', false, 'Name contains invalid characters.'); errors.push('name'); }
+  else sSetState('sName', true);
+
+  // Email
+  const email = sField('sEmail').value.trim();
+  if (!email) { sSetState('sEmail', false, 'Email is required.'); errors.push('email'); }
+  else if (!sEmailRe.test(email)) { sSetState('sEmail', false, 'Enter a valid email address.'); errors.push('email'); }
+  else sSetState('sEmail', true);
+
+  // Phone (optional but if provided must be valid)
+  const phone = sField('sPhone').value.trim();
+  if (phone && !sPhoneRe.test(phone)) {
+    sSetState('sPhone', false, 'Enter a valid 10-digit Indian mobile number.');
+    errors.push('phone');
+  } else { sSetState('sPhone', true); }
+
+  // Roll number (optional but max 20 chars)
+  const roll = sField('sRoll').value.trim();
+  if (roll && roll.length > 20) { sSetState('sRoll', false, 'Roll number cannot exceed 20 characters.'); errors.push('roll'); }
+  else sSetState('sRoll', true);
+
+  // DOB (optional but must be a past date and not too old)
+  const dob = sField('sDob').value;
+  if (dob) {
+    const d = new Date(dob);
+    const now = new Date();
+    const minYear = now.getFullYear() - 30;
+    const maxYear = now.getFullYear() - 3;
+    if (d >= now) { sSetState('sDob', false, 'Date of birth must be in the past.'); errors.push('dob'); }
+    else if (d.getFullYear() < minYear) { sSetState('sDob', false, 'Date of birth seems too far in the past.'); errors.push('dob'); }
+    else if (d.getFullYear() > maxYear) { sSetState('sDob', false, 'Student must be at least 3 years old.'); errors.push('dob'); }
+    else sSetState('sDob', true);
+  }
+
+  // Photo (optional but validate type/size if provided)
+  const photoFile = sField('sPhoto').files[0];
+  if (photoFile) {
+    if (!ALLOWED_IMG.includes(photoFile.type)) {
+      sSetState('sPhoto', false, 'Only JPG, PNG, GIF or WebP images are allowed.');
+      errors.push('photo');
+    } else if (photoFile.size > MAX_IMG_MB * 1024 * 1024) {
+      sSetState('sPhoto', false, `Photo must be under ${MAX_IMG_MB}MB.`);
+      errors.push('photo');
+    } else sSetState('sPhoto', true);
+  }
+
+  if (errors.length) {
+    alertEl.innerHTML = '<div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1"></i>Please fix the highlighted fields before saving.</div>';
+    return false;
+  }
+  alertEl.innerHTML = '';
+  return true;
+}
+
+async function saveStudent() {
+  if (!validateStudentForm()) return;
+
+  const fd = new FormData();
+  ['name','email','class_id','roll_number','gender','dob','phone','guardian','address'].forEach(f => {
+    const idMap = {name:'sName',email:'sEmail',class_id:'sClassId',roll_number:'sRoll',gender:'sGender',dob:'sDob',phone:'sPhone',guardian:'sGuardian',address:'sAddress'};
+    fd.append(f, document.getElementById(idMap[f]).value.trim());
+  });
+  const photo = document.getElementById('sPhoto').files[0];
+  if (photo) fd.append('photo', photo);
+
+  const saveBtn = document.getElementById('saveBtn');
+  const origHtml = saveBtn.innerHTML;
+  saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+  saveBtn.disabled = true;
+
+  const url = editId ? `/admin/api/students/${editId}` : '/admin/api/students';
+  const method = editId ? 'PUT' : 'POST';
+  const res = await fetch(url, { method, body: fd });
+  const data = await res.json();
+
+  saveBtn.innerHTML = origHtml;
+  saveBtn.disabled = false;
+
+  if (!res.ok) {
+    document.getElementById('modalAlert').innerHTML = `<div class="alert alert-danger small"><i class="bi bi-x-circle me-1"></i>${data.error}</div>`;
+    return;
+  }
+  bootstrap.Modal.getInstance(document.getElementById('studentModal')).hide();
+  showToast(data.message, 'success');
+  if (!editId && data.plain_password) showToast(`🔑 Password: ${data.plain_password}`, 'info', 8000);
+  loadStudents();
+}
+
+async function viewStudent(id) {
+  const res = await fetch(`/admin/api/students/${id}`);
+  const s = await res.json();
+  document.getElementById('viewBody').innerHTML = `
+    <div class="text-center mb-4">
+      ${s.photo ? `<img src="/static/uploads/${s.photo}" class="rounded-circle mb-2" width="90" height="90" style="object-fit:cover;">` :
+        `<div class="avatar-circle-lg mx-auto mb-2 bg-success">${s.name[0].toUpperCase()}</div>`}
+      <h5 class="fw-bold mb-0">${s.name}</h5>
+      <div class="text-muted small">${s.email}</div>
+    </div>
+    <div class="row g-2">
+      ${[['Roll No', s.roll_number||'—'],['Gender', s.gender||'—'],['DOB', s.dob||'—'],['Phone', s.phone||'—'],['Guardian', s.guardian||'—'],['Address', s.address||'—']].map(([l,v])=>`
+        <div class="col-6">
+          <div class="p-3 bg-light rounded-3">
+            <div class="text-muted" style="font-size:0.72rem;">${l}</div>
+            <div class="fw-semibold small">${v}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  new bootstrap.Modal(document.getElementById('viewModal')).show();
+}
+
+function confirmDeleteStudent(id, name) {
+  document.getElementById('deleteName').textContent = name;
+  document.getElementById('confirmDelete').onclick = () => deleteStudent(id);
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+async function deleteStudent(id) {
+  const res = await fetch(`/admin/api/students/${id}`, { method: 'DELETE' });
+  const data = await res.json();
+  bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+  showToast(data.message, 'success');
+  loadStudents();
+}
+
+// Clear invalid states on input — student form
+document.addEventListener('DOMContentLoaded', () => {
+  ['sName','sEmail','sRoll','sPhone','sDob','sPhoto'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      const evt = (id === 'sPhoto') ? 'change' : 'input';
+      el.addEventListener(evt, () => { el.classList.remove('is-invalid', 'is-valid'); });
+    }
+  });
+});
+
+loadStudents();
+</script>
+{% endblock %}

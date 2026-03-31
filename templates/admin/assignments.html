@@ -1,0 +1,215 @@
+{% extends 'common/base.html' %}
+{% block title %}Assignments{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h3 class="fw-bold mb-1">Teacher Assignments</h3>
+    <p class="text-muted mb-0">Assign teachers to class-subject combinations</p>
+  </div>
+  <button class="btn btn-primary fw-semibold" onclick="openAssignModal()">
+    <i class="bi bi-plus-circle me-2"></i>New Assignment
+  </button>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">#</th>
+            <th>Teacher</th>
+            <th>Class</th>
+            <th>Subject</th>
+            <th class="text-center pe-4">Action</th>
+          </tr>
+        </thead>
+        <tbody id="assignBody">
+          <tr><td colspan="5" class="text-center py-5 text-muted">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Assignment Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">New Assignment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4">
+        <div id="assignAlert"></div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Teacher <span class="text-danger">*</span></label>
+          <select class="form-select" id="aTeacher">
+            <option value="">— Select Teacher —</option>
+            {% for t in teachers %}
+            <option value="{{ t.id }}">{{ t.user.name }} ({{ t.qualification or 'Teacher' }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Class <span class="text-danger">*</span></label>
+          <select class="form-select" id="aClass">
+            <option value="">— Select Class —</option>
+            {% for c in classes %}
+            <option value="{{ c.id }}">{{ c.class_name }}-{{ c.section }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Subject <span class="text-danger">*</span></label>
+          <select class="form-select" id="aSubject">
+            <option value="">— Select Subject —</option>
+            {% for s in subjects %}
+            <option value="{{ s.id }}">{{ s.subject_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary fw-semibold" onclick="saveAssignment()">
+          <i class="bi bi-check-circle me-2"></i>Assign
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Remove Assignment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4"><p>Remove this assignment? Marks entered under it will also be deleted.</p></div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger fw-semibold" id="confirmDelete">Remove</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadAssignments() {
+  try {
+    const res = await fetch('/admin/api/assignments');
+    if (!res.ok) throw new Error('Failed to load');
+    const data = await res.json();
+    const body = document.getElementById('assignBody');
+    if (!data.assignments.length) {
+      body.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-diagram-3 fs-1 d-block mb-2"></i>No assignments yet</td></tr>';
+      return;
+    }
+    body.innerHTML = data.assignments.map((a, i) => `
+      <tr>
+        <td class="ps-4 text-muted">${i + 1}</td>
+        <td>
+          <div class="fw-semibold">${a.teacher_name}</div>
+        </td>
+        <td><span class="badge bg-primary-soft text-primary fw-semibold">${a.class_name}</span></td>
+        <td><span class="badge bg-success-soft text-success">${a.subject_name}</span></td>
+        <td class="text-center pe-4">
+          <button class="btn btn-sm btn-outline-danger" onclick="confirmRemove(${a.id})">
+            <i class="bi bi-trash me-1"></i>Remove
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    document.getElementById('assignBody').innerHTML =
+      '<tr><td colspan="5" class="text-center py-4 text-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to load assignments. Please refresh.</td></tr>';
+  }
+}
+
+function openAssignModal() {
+  ['aTeacher','aClass','aSubject'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = '';
+    el.classList.remove('is-invalid');
+  });
+  document.getElementById('assignAlert').innerHTML = '';
+  new bootstrap.Modal(document.getElementById('assignModal')).show();
+}
+
+async function saveAssignment() {
+  const teacherEl = document.getElementById('aTeacher');
+  const classEl = document.getElementById('aClass');
+  const subjectEl = document.getElementById('aSubject');
+  const alertEl = document.getElementById('assignAlert');
+
+  // Client-side validation
+  let valid = true;
+  [teacherEl, classEl, subjectEl].forEach(el => {
+    if (!el.value) { el.classList.add('is-invalid'); valid = false; }
+    else el.classList.remove('is-invalid');
+  });
+
+  if (!valid) {
+    alertEl.innerHTML = '<div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1"></i>Please select all fields (Teacher, Class, and Subject).</div>';
+    return;
+  }
+  alertEl.innerHTML = '';
+
+  try {
+    const res = await fetch('/admin/api/assignments', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        teacher_id: teacherEl.value,
+        class_id: classEl.value,
+        subject_id: subjectEl.value
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alertEl.innerHTML = `<div class="alert alert-danger small py-2"><i class="bi bi-x-circle me-1"></i>${data.error}</div>`;
+      return;
+    }
+    bootstrap.Modal.getInstance(document.getElementById('assignModal')).hide();
+    showToast(data.message || 'Assignment created successfully', 'success');
+    loadAssignments();
+  } catch (err) {
+    alertEl.innerHTML = '<div class="alert alert-danger small py-2"><i class="bi bi-x-circle me-1"></i>Network error. Please try again.</div>';
+  }
+}
+
+function confirmRemove(id) {
+  document.getElementById('confirmDelete').onclick = () => deleteAssignment(id);
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+async function deleteAssignment(id) {
+  try {
+    const res = await fetch(`/admin/api/assignments/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+    showToast(data.message || 'Assignment removed', res.ok ? 'success' : 'danger');
+    loadAssignments();
+  } catch (err) {
+    bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+    showToast('Delete failed. Please try again.', 'danger');
+  }
+}
+
+// Clear invalid states on change
+document.addEventListener('DOMContentLoaded', () => {
+  ['aTeacher','aClass','aSubject'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', () => el.classList.remove('is-invalid'));
+  });
+});
+
+loadAssignments();
+</script>
+{% endblock %}

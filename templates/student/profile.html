@@ -1,0 +1,101 @@
+{% extends 'common/base.html' %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h3 class="fw-bold mb-1">My Profile</h3>
+  <p class="text-muted mb-0">Your personal and academic information</p>
+</div>
+
+<div class="row g-4">
+  <!-- Profile Card -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm rounded-4 text-center p-4">
+      {% if student.photo %}
+        <img src="{{ url_for('static', filename='uploads/' + student.photo) }}"
+             class="rounded-circle mx-auto mb-3" width="110" height="110" style="object-fit:cover;">
+      {% else %}
+        <div class="avatar-circle-xl mx-auto mb-3">{{ current_user.name[0].upper() }}</div>
+      {% endif %}
+      <h5 class="fw-bold mb-1">{{ current_user.name }}</h5>
+      <div class="text-muted small mb-3">{{ current_user.email }}</div>
+      <span class="badge bg-primary-soft text-primary fw-semibold px-3 py-2 mb-3">
+        {{ student.class_.class_name ~ ' - ' ~ student.class_.section if student.class_ else 'No class assigned' }}
+      </span>
+      <div class="d-flex justify-content-center gap-3 mt-2">
+        <div class="text-center">
+          <div class="fw-bold text-primary">{{ student.roll_number or 'N/A' }}</div>
+          <div class="text-muted" style="font-size:0.72rem;">Roll No</div>
+        </div>
+        <div class="vr"></div>
+        <div class="text-center">
+          <div class="fw-bold text-success">{{ student.gender or 'N/A' }}</div>
+          <div class="text-muted" style="font-size:0.72rem;">Gender</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Details -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-header bg-white border-0 pt-4 px-4">
+        <h6 class="fw-bold mb-0"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Personal Information</h6>
+      </div>
+      <div class="card-body px-4 pb-4">
+        <div class="row g-4">
+          {% for label, value, icon in [
+            ('Full Name', current_user.name, 'bi-person'),
+            ('Email Address', current_user.email, 'bi-envelope'),
+            ('Date of Birth', student.dob|string if student.dob else 'Not provided', 'bi-calendar'),
+            ('Phone Number', student.phone or 'Not provided', 'bi-telephone'),
+            ('Guardian Name', student.guardian or 'Not provided', 'bi-people'),
+            ('Class', (student.class_.class_name ~ ' - ' ~ student.class_.section) if student.class_ else 'Not assigned', 'bi-collection')
+          ] %}
+          <div class="col-md-6">
+            <div class="d-flex gap-3 p-3 bg-light rounded-3">
+              <div class="profile-field-icon text-primary">
+                <i class="bi {{ icon }} fs-5"></i>
+              </div>
+              <div>
+                <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;">{{ label }}</div>
+                <div class="fw-semibold small mt-1">{{ value }}</div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+          {% if student.address %}
+          <div class="col-12">
+            <div class="d-flex gap-3 p-3 bg-light rounded-3">
+              <div class="profile-field-icon text-primary">
+                <i class="bi bi-geo-alt fs-5"></i>
+              </div>
+              <div>
+                <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;">Address</div>
+                <div class="fw-semibold small mt-1">{{ student.address }}</div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="card border-0 shadow-sm rounded-4 mt-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Quick Actions</h6>
+        <div class="d-flex gap-3 flex-wrap">
+          <a href="{{ url_for('student.marks') }}" class="btn btn-primary">
+            <i class="bi bi-bar-chart me-2"></i>View My Marks
+          </a>
+          <a href="{{ url_for('common.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
